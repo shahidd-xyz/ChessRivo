@@ -1,0 +1,33 @@
+# Dependencies
+**/node_modules/
+
+# Environment variables
+**/.env
+**/.env.*
+!.env.example
+
+# Next.js
+frontend/.next/
+frontend/out/
+
+# Build files
+**/build/
+
+# Logs
+**/*.log
+
+# Vercel
+**/.vercel/
+
+# Coverage
+**/coverage/
+
+# TypeScript
+**/*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Certificates
+*.pem
