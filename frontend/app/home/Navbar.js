@@ -14,7 +14,7 @@ export default function Navbar() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/auth/isUser", {
+        const response = await fetch("https://chessrivo.onrender.com/api/auth/isUser", {
           method: "GET",
           credentials: "include",
         });
@@ -42,7 +42,7 @@ export default function Navbar() {
     try {
       setLoggingOut(true);
 
-      const response = await fetch("http://localhost:8080/api/auth/logout", {
+      const response = await fetch("https://chessrivo.onrender.com/api/auth/logout", {
         method: "POST",
         credentials: "include",
       });

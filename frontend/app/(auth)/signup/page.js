@@ -98,7 +98,7 @@ export default function Signup() {
 
                 try {
                   const response = await axios.post(
-                    "http://localhost:8080/api/auth/signup",
+                    "https://chessrivo.onrender.com/api/auth/signup",
                     {
                       username: values.username,
                       email: values.email,
