@@ -128,9 +128,10 @@ module.exports.login = async (req, res) => {
     // Store JWT in HTTP-only cookie
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      secure: true,
+      sameSite: "none",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
     });
 
     return res.status(200).json({
@@ -193,7 +194,12 @@ module.exports.isUser = async (req, res) => {
 
 module.exports.logout = (req, res) => {
   try {
-    res.clearCookie("token");
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "none",
+      path: "/",
+    });
 
     return res.status(200).json({
       success: true,
