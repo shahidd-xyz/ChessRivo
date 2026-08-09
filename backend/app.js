@@ -10,35 +10,30 @@ const { Chess } = require("chess.js");
 
 const authRoutes = require("./routes/auth");
 
-// =====================================================
 // EXPRESS
-// =====================================================
 
 const app = express();
 
 const port = process.env.PORT || 8080;
 
-// =====================================================
 // HTTP SERVER
-// =====================================================
 
 const server = http.createServer(app);
 
-// =====================================================
 // SOCKET.IO
-// =====================================================
 
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: [
+      "http://localhost:3000",
+      "https://chessrivo-web.vercel.app",
+    ],
     credentials: true,
     methods: ["GET", "POST"],
   },
 });
 
-// =====================================================
 // MIDDLEWARE
-// =====================================================
 
 app.use(express.json());
 
@@ -46,14 +41,12 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "https://chessrivo-web.vercel.app"],
     credentials: true,
   }),
 );
 
-// =====================================================
 // DATABASE
-// =====================================================
 
 async function connectDatabase() {
   try {
@@ -68,15 +61,11 @@ async function connectDatabase() {
 
 connectDatabase();
 
-// =====================================================
 // AUTH ROUTES
-// =====================================================
 
 app.use("/api/auth", authRoutes);
 
-// =====================================================
 // GAME STORAGE
-// =====================================================
 
 // All active chess rooms
 const rooms = {};
@@ -84,9 +73,7 @@ const rooms = {};
 // Players waiting for Quick Play
 const waitingPlayers = [];
 
-// =====================================================
 // ROOM CREATION
-// =====================================================
 
 function createRoom(roomId) {
   if (rooms[roomId]) {
@@ -120,9 +107,7 @@ function createRoom(roomId) {
   return room;
 }
 
-// =====================================================
 // TIMER
-// =====================================================
 
 function emitTimer(roomId) {
   const room = rooms[roomId];
@@ -172,24 +157,18 @@ function startRoomTimer(roomId) {
 
     currentRoom.timer.lastUpdate = now;
 
-    // ---------------------------------------------
     // WHITE TIMER
-    // ---------------------------------------------
 
     if (currentRoom.timer.active === "w") {
       currentRoom.timer.white -= elapsed;
     }
 
-    // ---------------------------------------------
     // BLACK TIMER
-    // ---------------------------------------------
     else {
       currentRoom.timer.black -= elapsed;
     }
 
-    // ---------------------------------------------
     // WHITE TIMEOUT
-    // ---------------------------------------------
 
     if (currentRoom.timer.white <= 0) {
       currentRoom.timer.white = 0;
@@ -208,9 +187,7 @@ function startRoomTimer(roomId) {
       return;
     }
 
-    // ---------------------------------------------
     // BLACK TIMEOUT
-    // ---------------------------------------------
 
     if (currentRoom.timer.black <= 0) {
       currentRoom.timer.black = 0;
@@ -250,9 +227,7 @@ function stopRoomTimer(roomId) {
   }
 }
 
-// =====================================================
 // SEND GAME STATE
-// =====================================================
 
 function sendGameState(socket, roomId) {
   const room = rooms[roomId];
@@ -272,9 +247,7 @@ function sendGameState(socket, roomId) {
   });
 }
 
-// =====================================================
 // JOIN ROOM
-// =====================================================
 
 function joinRoom(socket, roomId) {
   if (!roomId) {
@@ -283,16 +256,12 @@ function joinRoom(socket, roomId) {
     return;
   }
 
-  // ---------------------------------------------
   // Create room
-  // ---------------------------------------------
 
   const room = createRoom(roomId);
 
-  // ---------------------------------------------
   // IMPORTANT:
   // Prevent duplicate player assignment
-  // ---------------------------------------------
 
   if (room.players.white === socket.id) {
     console.log(`Socket ${socket.id} is already White in ${roomId}`);
@@ -322,9 +291,7 @@ function joinRoom(socket, roomId) {
     return;
   }
 
-  // ---------------------------------------------
   // If socket belongs to another room
-  // ---------------------------------------------
 
   if (socket.roomId && socket.roomId !== roomId) {
     console.log(`Socket ${socket.id} already belongs to ${socket.roomId}`);
@@ -336,17 +303,13 @@ function joinRoom(socket, roomId) {
     return;
   }
 
-  // ---------------------------------------------
   // Join Socket.IO room
-  // ---------------------------------------------
 
   socket.join(roomId);
 
   socket.roomId = roomId;
 
-  // ---------------------------------------------
   // Assign White
-  // ---------------------------------------------
 
   if (!room.players.white) {
     room.players.white = socket.id;
@@ -356,9 +319,7 @@ function joinRoom(socket, roomId) {
     console.log(`White assigned: ${socket.id} -> ${roomId}`);
   }
 
-  // ---------------------------------------------
   // Assign Black
-  // ---------------------------------------------
   else if (!room.players.black) {
     room.players.black = socket.id;
 
@@ -370,31 +331,23 @@ function joinRoom(socket, roomId) {
     startRoomTimer(roomId);
   }
 
-  // ---------------------------------------------
   // Spectator
-  // ---------------------------------------------
   else {
     socket.emit("spectatorRole");
 
     console.log(`Spectator joined: ${socket.id} -> ${roomId}`);
   }
 
-  // ---------------------------------------------
   // Send game state
-  // ---------------------------------------------
 
   sendGameState(socket, roomId);
 
-  // ---------------------------------------------
   // Debug
-  // ---------------------------------------------
 
   console.log(`Room ${roomId}:`, room.players);
 }
 
-// =====================================================
 // REMOVE PLAYER FROM ROOM
-// =====================================================
 
 function removePlayerFromRoom(socket, reason) {
   const roomId = socket.roomId;
@@ -413,9 +366,7 @@ function removePlayerFromRoom(socket, reason) {
 
   let winner = null;
 
-  // ---------------------------------------------
   // WHITE
-  // ---------------------------------------------
 
   if (room.players.white === socket.id) {
     room.players.white = null;
@@ -425,9 +376,7 @@ function removePlayerFromRoom(socket, reason) {
     }
   }
 
-  // ---------------------------------------------
   // BLACK
-  // ---------------------------------------------
   else if (room.players.black === socket.id) {
     room.players.black = null;
 
@@ -436,9 +385,7 @@ function removePlayerFromRoom(socket, reason) {
     }
   }
 
-  // ---------------------------------------------
   // Notify opponent
-  // ---------------------------------------------
 
   if (winner) {
     stopRoomTimer(roomId);
@@ -453,9 +400,7 @@ function removePlayerFromRoom(socket, reason) {
 
   socket.roomId = null;
 
-  // ---------------------------------------------
   // Delete room if nobody remains
-  // ---------------------------------------------
 
   if (!room.players.white && !room.players.black) {
     stopRoomTimer(roomId);
@@ -466,16 +411,12 @@ function removePlayerFromRoom(socket, reason) {
   }
 }
 
-// =====================================================
 // SOCKET CONNECTION
-// =====================================================
 
 io.on("connection", (socket) => {
   console.log(`Socket connected: ${socket.id}`);
 
-  // ===================================================
   // CUSTOM ROOM
-  // ===================================================
 
   socket.on("joinRoom", (roomId) => {
     console.log(`joinRoom received from ${socket.id}: ${roomId}`);
@@ -483,18 +424,14 @@ io.on("connection", (socket) => {
     joinRoom(socket, roomId);
   });
 
-  // ===================================================
   // MOVE
-  // ===================================================
 
   socket.on("move", (move) => {
     const roomId = socket.roomId;
 
     console.log(`Move received from ${socket.id}:`, move);
 
-    // ---------------------------------------------
     // Validate room
-    // ---------------------------------------------
 
     if (!roomId) {
       console.log("Move rejected: socket has no room");
@@ -517,9 +454,7 @@ io.on("connection", (socket) => {
     const chess = room.chess;
 
     try {
-      // -------------------------------------------
       // Validate player turn
-      // -------------------------------------------
 
       if (chess.turn() === "w" && socket.id !== room.players.white) {
         console.log(`Move rejected: ${socket.id} is not White`);
@@ -537,9 +472,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // -------------------------------------------
       // Make chess move
-      // -------------------------------------------
 
       const result = chess.move(move);
 
@@ -551,9 +484,7 @@ io.on("connection", (socket) => {
         return;
       }
 
-      // -------------------------------------------
       // Update active player's timer
-      // -------------------------------------------
 
       const now = Date.now();
 
@@ -569,33 +500,23 @@ io.on("connection", (socket) => {
 
       room.timer.lastUpdate = now;
 
-      // -------------------------------------------
       // Change active timer
-      // -------------------------------------------
 
       room.timer.active = room.timer.active === "w" ? "b" : "w";
 
-      // -------------------------------------------
       // Send updated board
-      // -------------------------------------------
 
       io.to(roomId).emit("boardState", chess.fen());
 
-      // -------------------------------------------
-      // Send updated turn
-      // -------------------------------------------
+      // Send updated turn-
 
       io.to(roomId).emit("turn", chess.turn());
 
-      // -------------------------------------------
       // Send updated timer
-      // -------------------------------------------
 
       emitTimer(roomId);
 
-      // -------------------------------------------
       // Check game over
-      // -------------------------------------------
 
       if (chess.isGameOver()) {
         stopRoomTimer(roomId);
@@ -623,9 +544,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  // ===================================================
   // LEAVE GAME
-  // ===================================================
 
   socket.on("leaveGame", () => {
     console.log(`Leave requested by ${socket.id}`);
@@ -635,16 +554,12 @@ io.on("connection", (socket) => {
     socket.emit("leaveSuccess");
   });
 
-  // ===================================================
   // QUICK PLAY
-  // ===================================================
 
   socket.on("quickPlay", () => {
     console.log(`Quick Play request: ${socket.id}`);
 
-    // ---------------------------------------------
     // Already waiting?
-    // ---------------------------------------------
 
     if (waitingPlayers.includes(socket)) {
       console.log(`${socket.id} is already waiting`);
@@ -652,9 +567,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // ---------------------------------------------
     // Already in a game?
-    // ---------------------------------------------
 
     if (socket.roomId) {
       console.log(`${socket.id} is already in room ${socket.roomId}`);
@@ -662,9 +575,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // ---------------------------------------------
     // Nobody waiting
-    // ---------------------------------------------
 
     if (waitingPlayers.length === 0) {
       waitingPlayers.push(socket);
@@ -676,9 +587,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // ---------------------------------------------
     // Find valid opponent
-    // ---------------------------------------------
 
     let opponent = null;
 
@@ -692,9 +601,7 @@ io.on("connection", (socket) => {
       }
     }
 
-    // ---------------------------------------------
     // No valid opponent
-    // ---------------------------------------------
 
     if (!opponent) {
       waitingPlayers.push(socket);
@@ -704,9 +611,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    // ---------------------------------------------
     // Create unique room
-    // ---------------------------------------------
 
     const roomId = `room-${Date.now()}-${Math.random()
       .toString(36)
@@ -720,9 +625,7 @@ io.on("connection", (socket) => {
 
     console.log(`Room: ${roomId}`);
 
-    // ---------------------------------------------
     // Tell clients to navigate
-    // ---------------------------------------------
 
     opponent.emit("gameFound", {
       roomId,
@@ -750,16 +653,12 @@ io.on("connection", (socket) => {
     // receive their actual server-side roles.
   });
 
-  // ===================================================
   // DISCONNECT
-  // ===================================================
 
   socket.on("disconnect", () => {
     console.log(`Socket disconnected: ${socket.id}`);
 
-    // ---------------------------------------------
     // Remove from Quick Play queue
-    // ---------------------------------------------
 
     const waitingIndex = waitingPlayers.indexOf(socket);
 
@@ -769,9 +668,7 @@ io.on("connection", (socket) => {
       console.log(`Removed ${socket.id} from Quick Play queue`);
     }
 
-    // ---------------------------------------------
     // Remove from active game
-    // ---------------------------------------------
 
     if (socket.roomId) {
       removePlayerFromRoom(socket, "Opponent disconnected");
@@ -779,9 +676,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// =====================================================
 // START SERVER
-// =====================================================
 
 server.listen(port, () => {
   console.log(`Listening on port ${port}`);
